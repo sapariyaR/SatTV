@@ -4,27 +4,35 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
-import com.techverito.sattv.dao.DthDataProviderService;
+import com.techverito.sattv.dao.DataProvider;
+import com.techverito.sattv.dao.PreWrittenDataProviderImpl;
 import com.techverito.sattv.dao.Tranasation;
 import com.techverito.sattv.entity.Channel;
 import com.techverito.sattv.entity.ChannelGroup;
+import com.techverito.sattv.service.DthDataProviderService;
 
 public class DthDataProviderServiceTest {
 
+  public DthDataProviderService dataProviderService;
+  
+  @Before
+  public void init() {
+    DataProvider dataProvider = new PreWrittenDataProviderImpl();
+    this.dataProviderService = new DthDataProviderService(dataProvider);
+  }
   
   @Test
   public void getChannelsDataValidation() {
-    DthDataProviderService dataProviderService = new DthDataProviderService();
-    List<Channel> channels = dataProviderService.retriveAvailableChannels();
+    List<Channel> channels = this.dataProviderService.retriveAvailableChannels();
     Assert.assertNotNull(channels);
     Assert.assertEquals(channels.size(),11);
   }
   
   @Test
   public void getChannelsTotalPriceDataValidation() {
-    DthDataProviderService dataProviderService = new DthDataProviderService();
-    List<Channel> channels = dataProviderService.retriveAvailableChannels();
+    List<Channel> channels = this.dataProviderService.retriveAvailableChannels();
     Assert.assertNotNull(channels);
     double sum = channels.stream().mapToDouble(eachItem -> eachItem.getPrice()).sum();
     Assert.assertNotNull(sum);
@@ -33,8 +41,7 @@ public class DthDataProviderServiceTest {
   
   @Test
   public void getPackDataValidation() {
-    DthDataProviderService dataProviderService = new DthDataProviderService();
-    List<ChannelGroup> retriveAvailablePackages = dataProviderService.retriveAvailablePackages();
+    List<ChannelGroup> retriveAvailablePackages = this.dataProviderService.retriveAvailablePackages();
     Assert.assertNotNull(retriveAvailablePackages);
     boolean isRegionalPackVailable = retriveAvailablePackages.stream().anyMatch(eachItem -> eachItem.getIsComplimentary());
     Assert.assertEquals(isRegionalPackVailable,true);
@@ -49,24 +56,21 @@ public class DthDataProviderServiceTest {
   
   @Test
   public void getBasePackDataValidation() {
-    DthDataProviderService dataProviderService = new DthDataProviderService();
-    List<ChannelGroup> retrivePackagesBasedOnComplimentary = dataProviderService.retrivePackagesBasedOnComplimentary(false);
+    List<ChannelGroup> retrivePackagesBasedOnComplimentary = this.dataProviderService.retrivePackagesBasedOnComplimentary(false);
     Assert.assertNotNull("Base Pack Should not be null.",retrivePackagesBasedOnComplimentary);
   }
   
   @Test
   public void getRegionalPackDataValidation() {
-    DthDataProviderService dataProviderService = new DthDataProviderService();
-    List<ChannelGroup> retrivePackagesBasedOnComplimentary = dataProviderService.retrivePackagesBasedOnComplimentary(true);
+    List<ChannelGroup> retrivePackagesBasedOnComplimentary = this.dataProviderService.retrivePackagesBasedOnComplimentary(true);
     Assert.assertNotNull("Regional Pack should not be null.",retrivePackagesBasedOnComplimentary);
   }
   
   @Test
   public void calculateBasePackWithRegionalPackForOneMonth() {
-    DthDataProviderService dataProviderService = new DthDataProviderService();
     //Data Preparation
-    List<ChannelGroup> basePacks = dataProviderService.retrivePackagesBasedOnComplimentary(false);
-    List<ChannelGroup> regioPacks = dataProviderService.retrivePackagesBasedOnComplimentary(true);
+    List<ChannelGroup> basePacks = this.dataProviderService.retrivePackagesBasedOnComplimentary(false);
+    List<ChannelGroup> regioPacks = this.dataProviderService.retrivePackagesBasedOnComplimentary(true);
     
     Optional<ChannelGroup> basePackOptional = basePacks.stream().filter(eachPack -> eachPack.getAlias().equalsIgnoreCase("s")).findFirst();
     Optional<ChannelGroup> regioPackOptional = regioPacks.stream().filter(eachPack -> eachPack.getAlias().equalsIgnoreCase("g")).findFirst();
@@ -83,17 +87,16 @@ public class DthDataProviderServiceTest {
   
   @Test
   public void calculateBasePackWithRegionalPackForThreeMonth() {
-    DthDataProviderService dataProviderService = new DthDataProviderService();
     //Data Preparation
-    List<ChannelGroup> basePacks = dataProviderService.retrivePackagesBasedOnComplimentary(false);
-    List<ChannelGroup> regioPacks = dataProviderService.retrivePackagesBasedOnComplimentary(true);
+    List<ChannelGroup> basePacks = this.dataProviderService.retrivePackagesBasedOnComplimentary(false);
+    List<ChannelGroup> regioPacks = this.dataProviderService.retrivePackagesBasedOnComplimentary(true);
     
     Optional<ChannelGroup> basePackOptional = basePacks.stream().filter(eachPack -> eachPack.getAlias().equalsIgnoreCase("s")).findFirst();
     Optional<ChannelGroup> regioPackOptional = regioPacks.stream().filter(eachPack -> eachPack.getAlias().equalsIgnoreCase("g")).findFirst();
     Assert.assertEquals("Back Pack not available.",basePackOptional.isPresent(), true);
     Assert.assertEquals("Regional Pack not available.",regioPackOptional.isPresent(), true);
     
-    Tranasation calculateBillDetails = dataProviderService.calculateBillDetails(3, Arrays.asList(basePackOptional.get(),regioPackOptional.get()));
+    Tranasation calculateBillDetails = this.dataProviderService.calculateBillDetails(3, Arrays.asList(basePackOptional.get(),regioPackOptional.get()));
     Assert.assertNotNull("Fail to calculate Bill Details",calculateBillDetails);
     Assert.assertEquals("Condition fail to PPM",calculateBillDetails.getPricePerMonth(), 100d,0);
     Assert.assertEquals("Condition fail to AAGST",calculateBillDetails.getBillingAmount(), 354d,0);
@@ -103,17 +106,16 @@ public class DthDataProviderServiceTest {
   
   @Test
   public void calculateBasePackWithRegionalPackForNineMonth() {
-    DthDataProviderService dataProviderService = new DthDataProviderService();
     //Data Preparation
-    List<ChannelGroup> basePacks = dataProviderService.retrivePackagesBasedOnComplimentary(false);
-    List<ChannelGroup> regioPacks = dataProviderService.retrivePackagesBasedOnComplimentary(true);
+    List<ChannelGroup> basePacks = this.dataProviderService.retrivePackagesBasedOnComplimentary(false);
+    List<ChannelGroup> regioPacks = this.dataProviderService.retrivePackagesBasedOnComplimentary(true);
     
     Optional<ChannelGroup> basePackOptional = basePacks.stream().filter(eachPack -> eachPack.getAlias().equalsIgnoreCase("s")).findFirst();
     Optional<ChannelGroup> regioPackOptional = regioPacks.stream().filter(eachPack -> eachPack.getAlias().equalsIgnoreCase("g")).findFirst();
     Assert.assertEquals("Back Pack not available.",basePackOptional.isPresent(), true);
     Assert.assertEquals("Regional Pack not available.",regioPackOptional.isPresent(), true);
     
-    Tranasation calculateBillDetails = dataProviderService.calculateBillDetails(9, Arrays.asList(basePackOptional.get(),regioPackOptional.get()));
+    Tranasation calculateBillDetails = this.dataProviderService.calculateBillDetails(9, Arrays.asList(basePackOptional.get(),regioPackOptional.get()));
     Assert.assertNotNull("Fail to calculate Bill Details",calculateBillDetails);
     Assert.assertEquals("Condition fail to PPM",calculateBillDetails.getPricePerMonth(), 100d,0);
     Assert.assertEquals("Condition fail to AAGST",calculateBillDetails.getBillingAmount(), 1062d,0);
@@ -123,13 +125,12 @@ public class DthDataProviderServiceTest {
   
   @Test
   public void calculateRegionalPackForOneMonth() {
-    DthDataProviderService dataProviderService = new DthDataProviderService();
     //Data Preparation
-    List<ChannelGroup> regioPacks = dataProviderService.retrivePackagesBasedOnComplimentary(true);
+    List<ChannelGroup> regioPacks = this.dataProviderService.retrivePackagesBasedOnComplimentary(true);
     Optional<ChannelGroup> regioPackOptional = regioPacks.stream().filter(eachPack -> eachPack.getAlias().equalsIgnoreCase("g")).findFirst();
     Assert.assertEquals("Regional Pack not available.",regioPackOptional.isPresent(), true);
     
-    Tranasation calculateBillDetails = dataProviderService.calculateBillDetails(1, Arrays.asList(regioPackOptional.get()));
+    Tranasation calculateBillDetails = this.dataProviderService.calculateBillDetails(1, Arrays.asList(regioPackOptional.get()));
     Assert.assertNotNull("Fail to calculate Bill Details",calculateBillDetails);
     Assert.assertEquals("Condition fail to PPM",calculateBillDetails.getPricePerMonth(), 20d,0);
     Assert.assertEquals("Condition fail to AAGST",calculateBillDetails.getBillingAmount(), 23d,1);
@@ -139,13 +140,12 @@ public class DthDataProviderServiceTest {
   
   @Test
   public void calculateRegionalPackForTenMonth() {
-    DthDataProviderService dataProviderService = new DthDataProviderService();
     //Data Preparation
-    List<ChannelGroup> regioPacks = dataProviderService.retrivePackagesBasedOnComplimentary(true);
+    List<ChannelGroup> regioPacks = this.dataProviderService.retrivePackagesBasedOnComplimentary(true);
     Optional<ChannelGroup> regioPackOptional = regioPacks.stream().filter(eachPack -> eachPack.getAlias().equalsIgnoreCase("g")).findFirst();
     Assert.assertEquals("Regional Pack not available.",regioPackOptional.isPresent(), true);
     
-    Tranasation calculateBillDetails = dataProviderService.calculateBillDetails(10, Arrays.asList(regioPackOptional.get()));
+    Tranasation calculateBillDetails = this.dataProviderService.calculateBillDetails(10, Arrays.asList(regioPackOptional.get()));
     Assert.assertNotNull("Fail to calculate Bill Details",calculateBillDetails);
     Assert.assertEquals("Condition fail to PPM",calculateBillDetails.getPricePerMonth(), 20d,0);
     Assert.assertEquals("Condition fail to AAGST",calculateBillDetails.getBillingAmount(), 236d,1);
@@ -155,17 +155,15 @@ public class DthDataProviderServiceTest {
   
   @Test
   public void calculateCustomPackNegative() {
-    DthDataProviderService dataProviderService = new DthDataProviderService();
-    List<ChannelGroup> channels = dataProviderService.createCustomChannelGroup(Arrays.asList("test"));
-    Assert.assertNull(channels);
+    ChannelGroup channel = this.dataProviderService.createCustomChannelGroup(Arrays.asList("test"));
+    Assert.assertNull(channel);
   }
   
   @Test
   public void calculateCustomPackPositiveOneMonth() {
-    DthDataProviderService dataProviderService = new DthDataProviderService();
-    List<ChannelGroup> channels = dataProviderService.createCustomChannelGroup(Arrays.asList("Zee","Star Plus","Net Geo"));
-    Assert.assertNotNull(channels);
-    Tranasation calculateBillDetails = dataProviderService.calculateBillDetails(1, channels);
+    ChannelGroup channel = this.dataProviderService.createCustomChannelGroup(Arrays.asList("Zee","Star Plus","Net Geo"));
+    Assert.assertNotNull(channel);
+    Tranasation calculateBillDetails = dataProviderService.calculateBillDetails(1, Arrays.asList(channel));
     Assert.assertNotNull("Fail to calculate Bill Details",calculateBillDetails);
     Assert.assertEquals("Condition fail to PPM",calculateBillDetails.getPricePerMonth(), 80d,0);
     Assert.assertEquals("Condition fail to AAGST",calculateBillDetails.getBillingAmount(), 94d,1);
@@ -175,15 +173,14 @@ public class DthDataProviderServiceTest {
   
   @Test
   public void calculateCustomPackPositive() {
-    DthDataProviderService dataProviderService = new DthDataProviderService();
-    List<ChannelGroup> channels = dataProviderService.createCustomChannelGroup(Arrays.asList("Zee","Star Plus","Net Geo"));
-    Assert.assertNotNull(channels);
-    Tranasation calculateBillDetails = dataProviderService.calculateBillDetails(12, channels);
+    ChannelGroup channel = this.dataProviderService.createCustomChannelGroup(Arrays.asList("Zee","Star Plus","Net Geo"));
+    Assert.assertNotNull(channel);
+    Tranasation calculateBillDetails = this.dataProviderService.calculateBillDetails(12, Arrays.asList(channel));
     Assert.assertNotNull("Fail to calculate Bill Details",calculateBillDetails);
     Assert.assertEquals("Condition fail to PPM",calculateBillDetails.getPricePerMonth(), 80d,0);
     Assert.assertEquals("Condition fail to AAGST",calculateBillDetails.getBillingAmount(), 1132d,1);
     Assert.assertEquals("Condition fail for Discount",calculateBillDetails.getDiscount(), 10,0);
     Assert.assertEquals("Condition fail for Final Price",calculateBillDetails.getFinalPrice(), 1019d,1);
   }
-
+  
 }

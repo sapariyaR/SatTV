@@ -1,19 +1,26 @@
-package com.techverito.sattv.dao;
+package com.techverito.sattv.service;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import com.techverito.sattv.dao.DataProvider;
+import com.techverito.sattv.dao.Tranasation;
 import com.techverito.sattv.entity.Channel;
 import com.techverito.sattv.entity.ChannelGroup;
 import com.techverito.sattv.utils.Utils;
 
-public class DthDataProviderService extends DataProvider {
+/**
+ * @author Ravi Sapariya
+ * This Service fetch data from Data Provider and perform some computation on it.
+ */
+public class DthDataProviderService {
+
+  private DataProvider dataProvider;
   
-  public DthDataProviderService() {
-    
+  public DthDataProviderService(DataProvider dataProvider) {
+    this.dataProvider = dataProvider;
   }
   
   public String getApplicationBanner() {
@@ -47,28 +54,41 @@ public class DthDataProviderService extends DataProvider {
    * @return List of <ChannelGroup> all available TV channel Packages
    */
   public List<ChannelGroup> retriveAvailablePackages(){
-    return super.getPackages();
+    return this.dataProvider.getPackages();
   }
   
+  /**
+   * @param isComplimentary = true Return Regional packages
+   * @param isComplimentary = false Return Base packages
+   * @return List of <ChannelGroup> available Packages based on @param
+   */
   public List<ChannelGroup> retrivePackagesBasedOnComplimentary(Boolean isComplimentary) {
 
     if (isComplimentary) {
-      return super.getPackages().stream()
+      return this.dataProvider.getPackages().stream()
           .filter(eachPackage -> eachPackage.getIsComplimentary())
           .collect(Collectors.toList());
     }
-    return super.getPackages().stream()
+    return this.dataProvider.getPackages().stream()
         .filter(eachPackage -> !eachPackage.getIsComplimentary())
         .collect(Collectors.toList());
   }
   
   public List<Channel> retriveAvailableChannels(){
-    return new ArrayList<>(super.getChannels().values());
+    return new ArrayList<>(this.dataProvider.getChannels().values());
   }
   
+  /**
+   * @param numberOfMonth
+   * @param packages
+   * @return Tranasation Object
+   * This Service is responsible to calculate Billing details based on @param numberOfMonth, packages.
+   * In below calculation Default GST rate is 15%
+   * If user subscribe for 6 or more Rate of Discount is 10% and for 3 or more Rate of Discount is 5%
+   */
   public Tranasation calculateBillDetails(Integer numberOfMonth,List<ChannelGroup> packages) {
     Tranasation tranasation = new Tranasation();
-    Double totalPrice = 0d;
+    Double totalPrice = null;
     if(packages.size() > 1) {
       totalPrice = packages.stream().filter(eachPack -> !eachPack.getIsComplimentary()).mapToDouble(eachPack -> eachPack.getPrice()).sum();
     }else {
@@ -92,17 +112,22 @@ public class DthDataProviderService extends DataProvider {
   }
   
   
-  public List<ChannelGroup> createCustomChannelGroup(List<String> channelNames){
+  /**
+   * @param channelNames
+   * @return
+   * This Service Create Custom Channel Group based on channel name list.
+   * If not channel name match with actual channel this Service return null.
+   */
+  public ChannelGroup createCustomChannelGroup(List<String> channelNames){
     List<Channel> availableChannels = retriveAvailableChannels();
     Map<String, Channel> nameChannelMap = availableChannels.stream().collect(Collectors.toMap(eachKey -> eachKey.getName(), value->value));
     List<Channel> channels = findChannelByName(nameChannelMap,channelNames);
     if(channels == null) {
-      //throw new Exception("Unable to find the requested channels.");
       return null;
     }
     ChannelGroup customChannelGroup = new ChannelGroup(Utils.generateRandomBasedUUID(), "Al-la-carte", false, "AI", channels.stream().mapToDouble(eachItem -> eachItem.getPrice()).sum());
     customChannelGroup.setChannels(new HashSet<>(channels));
-    return Arrays.asList(customChannelGroup);
+    return customChannelGroup;
   }
   
   private List<Channel> findChannelByName(Map<String, Channel> nameChannelMap,List<String> channelNames){
